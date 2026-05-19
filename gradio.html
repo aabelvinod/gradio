@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gradient Flow | Responsive Gradient Maker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --glass: rgba(255,255,255,0.05);
+    --glass-border: rgba(255,255,255,0.10);
+    --glass-hover: rgba(255,255,255,0.12);
+    --surface: rgba(10,10,18,0.85);
+    --accent: #a78bfa;
+    --accent2: #38bdf8;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --danger: #f87171;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  body {
+    min-height: 100vh;
+    background: #080810;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(167,139,250,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(56,189,248,0.10) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Responsive Header */
+  header {
+    position: relative; z-index: 2;
+    padding: clamp(12px, 4vw, 18px) clamp(16px, 5vw, 32px);
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    background: rgba(8,8,16,0.6);
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-size: clamp(1rem, 4vw, 1.15rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(90deg, #fff 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  header span {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-left: auto;
+    display: none;
+  }
+
+  @media(min-width: 500px) { header span { display: block; } }
+
+  /* Main Layout - Improved Responsiveness */
+  .app {
+    position: relative; z-index: 1;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: clamp(16px, 4vw, 24px) clamp(12px, 4vw, 20px);
+    gap: clamp(16px, 3vw, 24px);
+  }
+
+  @media (min-width: 900px) {
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+    }
+  }
+
+  /* Preview Column */
+  .preview-col {
+    display: flex; flex-direction: column; gap: clamp(12px, 2vw, 16px);
+  }
+
+  .preview-wrap {
+    position: relative;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    cursor: copy;
+    aspect-ratio: 16/10;
+    min-height: 200px;
+    transition: all 0.2s ease;
+    background: #1a1a2e;
+  }
+
+  .preview-wrap:active { transform: scale(0.99); }
+
+  @media (max-width: 600px) {
+    .preview-wrap { aspect-ratio: 4/3; min-height: unset; }
+  }
+
+  #preview {
+    width: 100%; height: 100%;
+    display: block;
+    transition: background .15s;
+  }
+
+  .preview-hint {
+    position: absolute;
+    bottom: 12px; right: 14px;
+    font-size: clamp(0.6rem, 2vw, 0.68rem);
+    font-family: 'DM Mono', monospace;
+    color: rgba(255,255,255,0.5);
+    background: rgba(0,0,0,0.5);
+    padding: 5px 12px;
+    border-radius: 99px;
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  /* CSS Output */
+  .css-output {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: clamp(12px, 3vw, 14px) clamp(12px, 3vw, 16px);
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(0.65rem, 2.5vw, 0.72rem);
+    color: var(--accent2);
+    word-break: break-word;
+    line-height: 1.6;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .css-output:active { transform: scale(0.98); }
+
+  .css-output .label {
+    font-size: clamp(0.55rem, 2vw, 0.62rem);
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: block;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+
+  /* Action Buttons - Mobile Optimized */
+  .action-row {
+    display: flex;
+    gap: clamp(8px, 2vw, 12px);
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    flex: 1;
+    min-width: 70px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: clamp(10px, 3vw, 12px) clamp(12px, 3vw, 16px);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(0.7rem, 2.5vw, 0.8rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    backdrop-filter: blur(6px);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 480px) {
+    .btn {
+      white-space: normal;
+      word-break: keep-all;
+      gap: 4px;
+    }
+    .btn svg { width: 12px; height: 12px; }
+  }
+
+  .btn:active { transform: scale(0.96); }
+  .btn.primary { background: linear-gradient(135deg, var(--accent) 0%, #7c3aed 100%); border-color: transparent; color: #fff; }
+  .btn.primary:active { filter: brightness(0.9); }
+  .btn.danger { border-color: rgba(248,113,113,0.3); color: var(--danger); }
+
+  /* Controls Column - Scrollable on mobile */
+  .controls-col {
+    display: flex; flex-direction: column; gap: clamp(12px, 2.5vw, 16px);
+  }
+
+  @media (max-width: 899px) {
+    .controls-col {
+      max-height: 60vh;
+      overflow-y: auto;
+      padding-right: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* Panels */
+  .panel {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: clamp(14px, 3.5vw, 18px);
+    backdrop-filter: blur(12px);
+  }
+
+  .panel-title {
+    font-size: clamp(0.65rem, 2.5vw, 0.7rem);
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: clamp(12px, 3vw, 14px);
+  }
+
+  /* Type Tabs - Touch Friendly */
+  .type-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .type-tab {
+    flex: 1;
+    min-width: 80px;
+    padding: clamp(8px, 2.5vw, 10px) clamp(6px, 2vw, 8px);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(0.7rem, 2.5vw, 0.78rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .type-tab:active { transform: scale(0.97); }
+  .type-tab.active {
+    background: linear-gradient(135deg, rgba(167,139,250,0.25), rgba(56,189,248,0.15));
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Form Elements */
+  .form-row {
+    display: flex; flex-direction: column; gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .form-row label {
+    font-size: clamp(0.65rem, 2.2vw, 0.7rem);
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  label span {
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(0.65rem, 2.2vw, 0.72rem);
+    color: var(--accent);
+    text-transform: none;
+  }
+
+  /* Range Sliders - Larger touch target */
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%; height: 5px;
+    border-radius: 99px;
+    background: var(--glass-border);
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: clamp(18px, 5vw, 20px);
+    height: clamp(18px, 5vw, 20px);
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: 0 0 8px rgba(167,139,250,0.5);
+    cursor: grab;
+  }
+
+  input[type=range]::-moz-range-thumb {
+    width: clamp(18px, 5vw, 20px);
+    height: clamp(18px, 5vw, 20px);
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    cursor: grab;
+  }
+
+  /* Select */
+  select {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(0.75rem, 2.5vw, 0.82rem);
+    padding: clamp(10px, 3vw, 8px) clamp(12px, 3vw, 12px);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+
+  /* Color Stops - Mobile Optimized */
+  .stops-list {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 12px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .stop-item {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 2vw, 10px);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    padding: clamp(8px, 2.5vw, 10px) clamp(8px, 2vw, 12px);
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 500px) {
+    .stop-item {
+      flex-wrap: wrap;
+    }
+    .stop-swatch { order: 1; }
+    .stop-color-hex { order: 2; flex: 1; }
+    .stop-pos-wrap { order: 3; width: 100%; margin-top: 6px; }
+    .stop-remove { order: 4; }
+  }
+
+  .stop-swatch {
+    width: clamp(32px, 8vw, 36px);
+    height: clamp(32px, 8vw, 36px);
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,0.2);
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    transition: transform 0.1s;
+  }
+
+  .stop-swatch:active { transform: scale(1.05); }
+
+  .stop-swatch input[type=color] {
+    position: absolute;
+    inset: -4px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .stop-color-hex {
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(0.7rem, 2.5vw, 0.75rem);
+    color: var(--text);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 8px 6px;
+    width: 85px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .stop-pos-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+  }
+
+  .stop-pos-wrap input[type=range] { flex: 1; }
+  .stop-pos-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    min-width: 38px;
+    text-align: right;
+  }
+
+  .stop-remove {
+    width: clamp(28px, 7vw, 32px);
+    height: clamp(28px, 7vw, 32px);
+    border-radius: 8px;
+    border: 1px solid rgba(248,113,113,0.3);
+    background: transparent;
+    color: var(--danger);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .stop-remove:active { background: rgba(248,113,113,0.2); transform: scale(0.94); }
+
+  .add-stop-btn {
+    width: 100%;
+    padding: clamp(10px, 3vw, 12px);
+    border: 1px dashed rgba(255,255,255,0.2);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(0.7rem, 2.5vw, 0.78rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .add-stop-btn:active { transform: scale(0.98); }
+
+  .gradient-bar {
+    height: 12px;
+    border-radius: 99px;
+    margin-bottom: 14px;
+    border: 1px solid var(--glass-border);
+  }
+
+  /* Toast */
+  #toast-container {
+    position: fixed;
+    bottom: max(20px, var(--safe-area-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 9999;
+    pointer-events: none;
+    width: auto;
+    max-width: 90vw;
+  }
+
+  .toast {
+    background: rgba(20,20,34,0.98);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(16px);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(0.7rem, 2.5vw, 0.78rem);
+    padding: clamp(10px, 3vw, 12px) clamp(16px, 4vw, 24px);
+    border-radius: 99px;
+    animation: toastIn 0.22s cubic-bezier(0.2,1.4,0.4,1) forwards, toastOut 0.2s 0.9s ease forwards;
+    white-space: nowrap;
+    max-width: 90vw;
+    white-space: normal;
+    text-align: center;
+  }
+
+  @media (max-width: 480px) {
+    .toast { white-space: normal; text-align: center; }
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.94); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes toastOut {
+    to { opacity: 0; transform: translateY(-6px); }
+  }
+
+  .hidden { display: none !important; }
+
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.25);
+  }
+
+  /* Utility */
+  .stop-swatch::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(45deg, #555 25%, transparent 25%),
+      linear-gradient(-45deg, #555 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #555 75%),
+      linear-gradient(-45deg, transparent 75%, #555 75%);
+    background-size: 6px 6px;
+    background-position: 0 0, 0 3px, 3px -3px, -3px 0px;
+    z-index: -1;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"></div>
+  <h1>Gradient Maker</h1>
+  <span>Create & Export beautiful CSS gradients</span>
+</header>
+
+<div class="app">
+  <!-- Left: preview -->
+  <div class="preview-col">
+    <div class="preview-wrap" id="previewWrap" title="Click to copy CSS">
+      <div id="preview"></div>
+      <div class="preview-hint">📋 tap to copy CSS</div>
+    </div>
+
+    <div class="css-output" id="cssOutput" title="Click to copy">
+      <span class="label">Generated CSS</span>
+      <span id="cssText">background: …</span>
+    </div>
+
+    <div class="action-row">
+      <button class="btn primary" id="btnCopy">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy
+      </button>
+      <button class="btn" id="btnExport">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+      <button class="btn danger" id="btnReset">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+        Reset
+      </button>
+    </div>
+  </div>
+
+  <!-- Right: controls -->
+  <div class="controls-col">
+    <!-- Gradient Type -->
+    <div class="panel">
+      <div class="panel-title">🎨 Gradient Type</div>
+      <div class="type-tabs">
+        <button class="type-tab active" data-type="linear">Linear</button>
+        <button class="type-tab" data-type="radial">Radial</button>
+        <button class="type-tab" data-type="conic">Conic</button>
+      </div>
+    </div>
+
+    <!-- Options Panel -->
+    <div class="panel" id="panelOptions">
+      <div class="panel-title">⚙️ Options</div>
+      <div id="optLinear">
+        <div class="form-row">
+          <label>↻ Angle <span id="angleVal">135°</span></label>
+          <input type="range" id="angle" min="0" max="360" value="135">
+        </div>
+      </div>
+      <div id="optRadial" class="hidden">
+        <div class="form-row">
+          <label>Shape</label>
+          <select id="radialShape">
+            <option value="ellipse">Ellipse</option>
+            <option value="circle">Circle</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Size</label>
+          <select id="radialSize">
+            <option value="farthest-corner">Farthest Corner</option>
+            <option value="closest-corner">Closest Corner</option>
+            <option value="farthest-side">Farthest Side</option>
+            <option value="closest-side">Closest Side</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Position X <span id="radialXVal">50%</span></label>
+          <input type="range" id="radialX" min="0" max="100" value="50">
+        </div>
+        <div class="form-row">
+          <label>Position Y <span id="radialYVal">50%</span></label>
+          <input type="range" id="radialY" min="0" max="100" value="50">
+        </div>
+      </div>
+      <div id="optConic" class="hidden">
+        <div class="form-row">
+          <label>Start Angle <span id="conicAngleVal">0°</span></label>
+          <input type="range" id="conicAngle" min="0" max="360" value="0">
+        </div>
+        <div class="form-row">
+          <label>Position X <span id="conicXVal">50%</span></label>
+          <input type="range" id="conicX" min="0" max="100" value="50">
+        </div>
+        <div class="form-row">
+          <label>Position Y <span id="conicYVal">50%</span></label>
+          <input type="range" id="conicY" min="0" max="100" value="50">
+        </div>
+      </div>
+    </div>
+
+    <!-- Color Stops Panel -->
+    <div class="panel">
+      <div class="panel-title">🎨 Color Stops</div>
+      <div class="gradient-bar" id="gradientBar"></div>
+      <div class="stops-list" id="stopsList"></div>
+      <button class="add-stop-btn" id="addStop">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Color Stop
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+(function() {
+  const DEFAULT_STATE = {
+    type: 'linear',
+    angle: 135,
+    radialShape: 'ellipse',
+    radialSize: 'farthest-corner',
+    radialX: 50,
+    radialY: 50,
+    conicAngle: 0,
+    conicX: 50,
+    conicY: 50,
+    stops: [
+      { color: '#a78bfa', pos: 0 },
+      { color: '#38bdf8', pos: 100 },
+    ]
+  };
+
+  let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+
+  // DOM refs
+  const preview = document.getElementById('preview');
+  const previewWrap = document.getElementById('previewWrap');
+  const cssText = document.getElementById('cssText');
+  const cssOutput = document.getElementById('cssOutput');
+  const stopsList = document.getElementById('stopsList');
+  const gradientBar = document.getElementById('gradientBar');
+  const typeTabs = document.querySelectorAll('.type-tab');
+  const optLinear = document.getElementById('optLinear');
+  const optRadial = document.getElementById('optRadial');
+  const optConic = document.getElementById('optConic');
+  const angleInput = document.getElementById('angle');
+  const angleVal = document.getElementById('angleVal');
+  const radialShape = document.getElementById('radialShape');
+  const radialSize = document.getElementById('radialSize');
+  const radialX = document.getElementById('radialX');
+  const radialY = document.getElementById('radialY');
+  const radialXVal = document.getElementById('radialXVal');
+  const radialYVal = document.getElementById('radialYVal');
+  const conicAngle = document.getElementById('conicAngle');
+  const conicX = document.getElementById('conicX');
+  const conicY = document.getElementById('conicY');
+  const conicAngleVal = document.getElementById('conicAngleVal');
+  const conicXVal = document.getElementById('conicXVal');
+  const conicYVal = document.getElementById('conicYVal');
+
+  function buildGradientCSS(st) {
+    const stops = [...st.stops].sort((a,b) => a.pos - b.pos);
+    const stopsStr = stops.map(s => `${s.color} ${s.pos}%`).join(', ');
+    if (st.type === 'linear') {
+      return `linear-gradient(${st.angle}deg, ${stopsStr})`;
+    } else if (st.type === 'radial') {
+      return `radial-gradient(${st.radialShape} ${st.radialSize} at ${st.radialX}% ${st.radialY}%, ${stopsStr})`;
+    } else {
+      return `conic-gradient(from ${st.conicAngle}deg at ${st.conicX}% ${st.conicY}%, ${stopsStr})`;
+    }
+  }
+
+  function buildFullCSS(st) {
+    return `background: ${buildGradientCSS(st)};`;
+  }
+
+  function update() {
+    const grad = buildGradientCSS(state);
+    const full = buildFullCSS(state);
+    preview.style.background = grad;
+    cssText.textContent = full;
+    const sortedStops = [...state.stops].sort((a,b) => a.pos - b.pos);
+    const barStr = sortedStops.map(s => `${s.color} ${s.pos}%`).join(', ');
+    gradientBar.style.background = `linear-gradient(90deg, ${barStr})`;
+  }
+
+  function showOptions() {
+    optLinear.classList.add('hidden');
+    optRadial.classList.add('hidden');
+    optConic.classList.add('hidden');
+    if (state.type === 'linear') optLinear.classList.remove('hidden');
+    else if (state.type === 'radial') optRadial.classList.remove('hidden');
+    else optConic.classList.remove('hidden');
+  }
+
+  function renderStops() {
+    stopsList.innerHTML = '';
+    state.stops.forEach((stop, i) => {
+      const el = document.createElement('div');
+      el.className = 'stop-item';
+      el.innerHTML = `
+        <div class="stop-swatch" style="background:${stop.color}">
+          <input type="color" value="${stop.color}" data-i="${i}">
+        </div>
+        <input class="stop-color-hex" type="text" value="${stop.color}" data-i="${i}" spellcheck="false">
+        <div class="stop-pos-wrap">
+          <input type="range" min="0" max="100" value="${stop.pos}" data-i="${i}" class="stop-range">
+          <span class="stop-pos-val">${stop.pos}%</span>
+        </div>
+        <button class="stop-remove" data-i="${i}" title="Remove stop">×</button>
+      `;
+      stopsList.appendChild(el);
+    });
+
+    stopsList.querySelectorAll('input[type=color]').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const i = +e.target.dataset.i;
+        state.stops[i].color = e.target.value;
+        const item = e.target.closest('.stop-item');
+        item.querySelector('.stop-swatch').style.background = e.target.value;
+        item.querySelector('.stop-color-hex').value = e.target.value;
+        update();
+      });
+    });
+
+    stopsList.querySelectorAll('.stop-color-hex').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const i = +e.target.dataset.i;
+        const val = e.target.value.trim();
+        if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(val)) {
+          state.stops[i].color = val;
+          const item = e.target.closest('.stop-item');
+          item.querySelector('.stop-swatch').style.background = val;
+          item.querySelector('input[type=color]').value = val.length <= 7 ? val : val.slice(0,7);
+          update();
+        }
+      });
+      inp.addEventListener('blur', () => renderStops());
+    });
+
+    stopsList.querySelectorAll('.stop-range').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const i = +e.target.dataset.i;
+        state.stops[i].pos = +e.target.value;
+        e.target.closest('.stop-item').querySelector('.stop-pos-val').textContent = e.target.value + '%';
+        update();
+      });
+    });
+
+    stopsList.querySelectorAll('.stop-remove').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const i = +e.target.dataset.i;
+        if (state.stops.length <= 2) { toast('Need at least 2 stops', 'info'); return; }
+        state.stops.splice(i, 1);
+        renderStops();
+        update();
+      });
+    });
+  }
+
+  typeTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      state.type = tab.dataset.type;
+      typeTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      showOptions();
+      update();
+    });
+  });
+
+  angleInput.addEventListener('input', () => {
+    state.angle = +angleInput.value;
+    angleVal.textContent = state.angle + '°';
+    update();
+  });
+
+  radialShape.addEventListener('change', () => { state.radialShape = radialShape.value; update(); });
+  radialSize.addEventListener('change', () => { state.radialSize = radialSize.value; update(); });
+  radialX.addEventListener('input', () => { state.radialX = +radialX.value; radialXVal.textContent = state.radialX + '%'; update(); });
+  radialY.addEventListener('input', () => { state.radialY = +radialY.value; radialYVal.textContent = state.radialY + '%'; update(); });
+  conicAngle.addEventListener('input', () => { state.conicAngle = +conicAngle.value; conicAngleVal.textContent = state.conicAngle + '°'; update(); });
+  conicX.addEventListener('input', () => { state.conicX = +conicX.value; conicXVal.textContent = state.conicX + '%'; update(); });
+  conicY.addEventListener('input', () => { state.conicY = +conicY.value; conicYVal.textContent = state.conicY + '%'; update(); });
+
+  document.getElementById('addStop').addEventListener('click', () => {
+    const cols = ['#f472b6','#fb923c','#facc15','#4ade80','#60a5fa','#a78bfa','#f87171','#2dd4bf'];
+    const randomColor = cols[Math.floor(Math.random() * cols.length)];
+    const positions = state.stops.map(s => s.pos);
+    let newPos = 50;
+    if (positions.length >= 2) {
+      const sorted = [...positions].sort((a,b)=>a-b);
+      let maxGap = 0, gapIdx = 0;
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const g = sorted[i+1] - sorted[i];
+        if (g > maxGap) { maxGap = g; gapIdx = i; }
+      }
+      newPos = Math.round((sorted[gapIdx] + sorted[gapIdx+1]) / 2);
+    }
+    state.stops.push({ color: randomColor, pos: newPos });
+    renderStops();
+    update();
+  });
+
+  function copyCSSToClipboard() {
+    const css = buildFullCSS(state);
+    navigator.clipboard.writeText(css).then(() => toast('CSS copied!', 'success')).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = css; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      toast('CSS copied!', 'success');
+    });
+  }
+
+  document.getElementById('btnCopy').addEventListener('click', copyCSSToClipboard);
+  previewWrap.addEventListener('click', copyCSSToClipboard);
+  cssOutput.addEventListener('click', copyCSSToClipboard);
+
+  document.getElementById('btnReset').addEventListener('click', () => {
+    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    typeTabs.forEach(t => t.classList.toggle('active', t.dataset.type === state.type));
+    angleInput.value = state.angle; angleVal.textContent = state.angle + '°';
+    radialShape.value = state.radialShape;
+    radialSize.value = state.radialSize;
+    radialX.value = state.radialX; radialXVal.textContent = state.radialX + '%';
+    radialY.value = state.radialY; radialYVal.textContent = state.radialY + '%';
+    conicAngle.value = state.conicAngle; conicAngleVal.textContent = state.conicAngle + '°';
+    conicX.value = state.conicX; conicXVal.textContent = state.conicX + '%';
+    conicY.value = state.conicY; conicYVal.textContent = state.conicY + '%';
+    showOptions();
+    renderStops();
+    update();
+    toast('Reset to defaults', 'info');
+  });
+
+  document.getElementById('btnExport').addEventListener('click', () => {
+    const rect = preview.getBoundingClientRect();
+    const W = Math.round(rect.width) || 800;
+    const H = Math.round(rect.height) || 500;
+    const canvas = document.createElement('canvas');
+    canvas.width = W * window.devicePixelRatio;
+    canvas.height = H * window.devicePixelRatio;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    const stops = [...state.stops].sort((a,b) => a.pos - b.pos);
+
+    function hexToRgba(hex) {
+      hex = hex.replace('#','');
+      if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+      const r = parseInt(hex.slice(0,2),16);
+      const g = parseInt(hex.slice(2,4),16);
+      const b = parseInt(hex.slice(4,6),16);
+      const a = hex.length === 8 ? parseInt(hex.slice(6,8),16)/255 : 1;
+      return `rgba(${r},${g},${b},${a})`;
+    }
+
+    if (state.type === 'linear') {
+      const rad = state.angle * Math.PI / 180;
+      const cx = W / 2, cy = H / 2;
+      const len = Math.abs(W * Math.sin(rad)) + Math.abs(H * Math.cos(rad));
+      const hlen = len / 2;
+      const x0 = cx - Math.sin(rad) * hlen;
+      const y0 = cy + Math.cos(rad) * hlen;
+      const x1 = cx + Math.sin(rad) * hlen;
+      const y1 = cy - Math.cos(rad) * hlen;
+      const grd = ctx.createLinearGradient(x0, y0, x1, y1);
+      stops.forEach(s => grd.addColorStop(s.pos / 100, hexToRgba(s.color)));
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, W, H);
+    } else if (state.type === 'radial') {
+      const cx = state.radialX / 100 * W;
+      const cy = state.radialY / 100 * H;
+      function dist(x1,y1,x2,y2){ return Math.sqrt((x2-x1)**2+(y2-y1)**2); }
+      const corners = [[0,0],[W,0],[0,H],[W,H]];
+      const cornerDists = corners.map(([x,y]) => dist(cx,cy,x,y));
+      const sides = [cy, H-cy, cx, W-cx];
+      let rx, ry;
+      const isCircle = state.radialShape === 'circle';
+      const sz = state.radialSize;
+      if (sz === 'farthest-corner') {
+        const fd = Math.max(...cornerDists);
+        if (isCircle) { rx = ry = fd; }
+        else { rx = Math.max(cx, W-cx); ry = Math.max(cy, H-cy);
+          const corner = corners[cornerDists.indexOf(fd)];
+          const t = Math.sqrt(((corner[0]-cx)/rx)**2 + ((corner[1]-cy)/ry)**2);
+          rx /= t; ry /= t;
+        }
+      } else if (sz === 'closest-corner') {
+        const cd = Math.min(...cornerDists);
+        if (isCircle) { rx = ry = cd; }
+        else { rx = Math.min(cx, W-cx); ry = Math.min(cy, H-cy);
+          const corner = corners[cornerDists.indexOf(cd)];
+          const t = Math.sqrt(((corner[0]-cx)/rx)**2 + ((corner[1]-cy)/ry)**2);
+          if (t > 0) { rx /= t; ry /= t; }
+        }
+      } else if (sz === 'farthest-side') {
+        if (isCircle) { rx = ry = Math.max(...sides); }
+        else { rx = Math.max(cx, W-cx); ry = Math.max(cy, H-cy); }
+      } else {
+        if (isCircle) { rx = ry = Math.min(...sides); }
+        else { rx = Math.min(cx, W-cx); ry = Math.min(cy, H-cy); }
+      }
+      rx = Math.max(rx, 1); ry = Math.max(ry, 1);
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(1, ry / rx);
+      ctx.translate(-cx, -cy);
+      const grd = ctx.createRadialGradient(cx, cy * (rx/ry), 0, cx, cy * (rx/ry), rx);
+      stops.forEach(s => grd.addColorStop(s.pos / 100, hexToRgba(s.color)));
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, W, H * (rx / ry));
+      ctx.restore();
+    } else {
+      const imgData = ctx.createImageData(W, H);
+      const data = imgData.data;
+      const cx = state.conicX / 100 * W;
+      const cy = state.conicY / 100 * H;
+      const startRad = state.conicAngle * Math.PI / 180;
+      function lerpColor(a, b, t) {
+        function pr(h){ h=h.replace('#',''); if(h.length===3)h=h.split('').map(c=>c+c).join(''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),h.length===8?parseInt(h.slice(6,8),16):255]; }
+        const ca=pr(a), cb=pr(b);
+        return ca.map((v,i) => Math.round(v + (cb[i]-v)*t));
+      }
+      function getColorAtPos(pct) {
+        if (pct <= stops[0].pos) return lerpColor(stops[0].color, stops[0].color, 0);
+        if (pct >= stops[stops.length-1].pos) return lerpColor(stops[stops.length-1].color, stops[stops.length-1].color, 0);
+        for (let i = 0; i < stops.length-1; i++) {
+          if (pct >= stops[i].pos && pct <= stops[i+1].pos) {
+            const t = (pct - stops[i].pos) / (stops[i+1].pos - stops[i].pos);
+            return lerpColor(stops[i].color, stops[i+1].color, t);
+          }
+        }
+        return [255,255,255,255];
+      }
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          let angle = Math.atan2(y - cy, x - cx) - startRad + Math.PI / 2;
+          angle = ((angle % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+          const pct = (angle / (2*Math.PI)) * 100;
+          const [r,g,b,a] = getColorAtPos(pct);
+          const idx = (y * W + x) * 4;
+          data[idx] = r; data[idx+1] = g; data[idx+2] = b; data[idx+3] = a;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+    const link = document.createElement('a');
+    link.download = `gradient-${state.type}-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('PNG exported!', 'success');
+  });
+
+  function toast(msg, type='info') {
+    const container = document.getElementById('toast-container');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 1100);
+  }
+
+  showOptions();
+  renderStops();
+  update();
+})();
+</script>
+</body>
+</html>
